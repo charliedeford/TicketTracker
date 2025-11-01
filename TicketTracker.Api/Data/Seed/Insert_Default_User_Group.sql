@@ -1,0 +1,8 @@
+BEGIN TRANSACTION
+
+USING [dbo].[TicketTracker]
+
+INSERT INTO [Groups] (Name)
+VALUES ('Default');
+
+COMMIT TRANSACTION

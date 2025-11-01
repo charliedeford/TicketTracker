@@ -1,0 +1,103 @@
+@page "/register"
+@using TicketTracker.Ui.Models
+@using TicketTracker.Ui.Services
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudCard Elevation="25" Class="pa-4">
+        <MudCardHeader>
+            <MudText Typo="Typo.h4" Align="Align.Center">Register</MudText>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudForm @ref="form" @bind-IsValid="@success">
+                <MudTextField T="string" 
+                            @bind-Value="username" 
+                            Label="Username" 
+                            Required="true" 
+                            RequiredError="Username is required"/>
+                <MudTextField T="string" 
+                            @bind-Value="password" 
+                            Label="Password" 
+                            Required="true" 
+                            RequiredError="Password is required"
+                            InputType="@PasswordInput" 
+                            Adornment="Adornment.End" 
+                            AdornmentIcon="@PasswordInputIcon" 
+                            OnAdornmentClick="TogglePasswordVisibility"/>
+                <MudTextField T="string" 
+                            @bind-Value="confirmPassword" 
+                            Label="Confirm Password" 
+                            Required="true" 
+                            RequiredError="Password confirmation is required"
+                            InputType="@PasswordInput" 
+                            Validation="@(new Func<string, string>(PasswordMatch))"
+                            Adornment="Adornment.End" 
+                            AdornmentIcon="@PasswordInputIcon" 
+                            OnAdornmentClick="TogglePasswordVisibility"/>
+            </MudForm>
+        </MudCardContent>
+        <MudCardActions Class="d-flex justify-space-between align-center">
+            <MudLink Href="/login" Underline="Underline.Always">Already have an account?</MudLink>
+            <MudButton Variant="Variant.Filled" 
+                      Color="Color.Primary" 
+                      Disabled="@(!success)" 
+                      OnClick="HandleRegister">Register</MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>
+
+@code {
+    bool success;
+    string username = string.Empty;
+    string password = string.Empty;
+    string confirmPassword = string.Empty;
+    MudForm form = null!;
+
+    bool PasswordVisibility;
+    InputType PasswordInput = InputType.Password;
+    string PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+
+    void TogglePasswordVisibility()
+    {
+        if (PasswordVisibility)
+        {
+            PasswordVisibility = false;
+            PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+            PasswordInput = InputType.Password;
+        }
+        else
+        {
+            PasswordVisibility = true;
+            PasswordInputIcon = Icons.Material.Filled.Visibility;
+            PasswordInput = InputType.Text;
+        }
+    }
+
+    private string PasswordMatch(string arg)
+    {
+        if (password != arg)
+            return "Passwords don't match";
+        return string.Empty;
+    }
+
+    private async Task HandleRegister()
+    {
+        await form.Validate();
+
+        if (form.IsValid)
+        {
+            var request = new RegisterRequest(username, password, Array.Empty<int>());
+            if (await AuthService.RegisterAsync(request))
+            {
+                Snackbar.Add("Registration successful", Severity.Success);
+                NavigationManager.NavigateTo("/login");
+            }
+            else
+            {
+                Snackbar.Add("Registration failed", Severity.Error);
+            }
+        }
+    }
+}

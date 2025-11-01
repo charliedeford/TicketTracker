@@ -1,0 +1,15 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+.vscode/
+TicketTracker.Api/appsettings.json
+*.user
+*.userosscache
+*.sln.docstates
+*.csproj.user
+*.env
+.env.local
+.env.*
+.envrc

@@ -1,0 +1,20 @@
+﻿<MudNavMenu>
+    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
+    <MudNavLink Href="counter" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Add">Counter</MudNavLink>
+    <MudNavLink Href="tickets" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.List">Tickets</MudNavLink>
+    <MudNavGroup Title="Settings" Icon="@Icons.Material.Filled.Settings" Expanded="true">
+        <MudNavLink Href="users" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Person">Users</MudNavLink>
+        <MudNavLink Href="groups" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Group">Groups</MudNavLink>
+    </MudNavGroup>
+</MudNavMenu>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}
