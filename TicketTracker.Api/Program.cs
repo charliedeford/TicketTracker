@@ -38,9 +38,9 @@ builder.Services.AddScoped<IAuthorizationHandler, GroupAuthorizationHandler>();
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("RequireAdmin",   p => p.Requirements.Add(new GroupRequirement(new[] { "Admin" })));
-    options.AddPolicy("RequireSupport", p => p.Requirements.Add(new GroupRequirement(new[] { "Support", "Admin" })));
-    options.AddPolicy("RequireUser",    p => p.Requirements.Add(new GroupRequirement(new[] { "User", "Support", "Admin" })));
+    options.AddPolicy("RequireAdmin",   p => p.Requirements.Add(new GroupRequirement(["Admin"])));
+    options.AddPolicy("RequireSupport", p => p.Requirements.Add(new GroupRequirement(["Support", "Admin"])));
+    options.AddPolicy("RequireUser",    p => p.Requirements.Add(new GroupRequirement(["User", "Support", "Admin"])));
 });
 
 var connString = builder.Configuration.GetConnectionString("DefaultConnection")

@@ -53,9 +53,12 @@ public class AuthService(IUserRepository userRepository, IConfiguration config) 
             new(JwtRegisteredClaimNames.UniqueName, user.Username)
         };
 
-        foreach (var group in user.Groups)
-        {
-            claims.Add(new Claim("group", group.Name));
+        if(user.Groups != null)
+        {            
+            foreach (var group in user.Groups)
+            {
+                claims.Add(new Claim("group", group.Name));
+            }
         }
 
         var token = new JwtSecurityToken(

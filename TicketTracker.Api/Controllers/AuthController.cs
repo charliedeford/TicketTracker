@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using TicketTracker.Api.Models.Requests;
 using TicketTracker.Api.Models.Responses;
-using TicketTracker.Api.Authorization;
 
 namespace TicketTracker.Api.Controllers;
 
