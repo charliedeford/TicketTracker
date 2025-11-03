@@ -33,6 +33,7 @@ builder.Services.AddControllers(options =>
 });
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IGroupRepository, GroupRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAuthorizationHandler, GroupAuthorizationHandler>();
 

@@ -1,6 +1,9 @@
 ﻿@inherits LayoutComponentBase
 @using MudBlazor
 @using MudBlazor.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject TicketTracker.Ui.Services.IAuthService AuthService
+@inject NavigationManager Nav
 
 <MudThemeProvider />
 <MudDialogProvider />
@@ -11,7 +14,16 @@
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
         <MudText Typo="Typo.h5" Class="ml-3">Ticket Tracker</MudText>
         <MudSpacer />
-        <MudIconButton Icon="@Icons.Material.Filled.MoreVert" Color="Color.Inherit" Edge="Edge.End" />
+        <AuthorizeView>
+            <NotAuthorized>
+                <MudButton Variant="Variant.Text" Color="Color.Inherit" OnClick="@(()=>Nav.NavigateTo("/login"))">Login</MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Class="ml-2" OnClick="@(()=>Nav.NavigateTo("/register"))">Register</MudButton>
+            </NotAuthorized>
+            <Authorized>
+                <MudText Class="mr-2">Hello, @context.User.Identity?.Name</MudText>
+                <MudButton Variant="Variant.Outlined" Color="Color.Inherit" OnClick="Logout">Logout</MudButton>
+            </Authorized>
+        </AuthorizeView>
     </MudAppBar>
     <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
         <NavMenu />
@@ -29,5 +41,11 @@
     private void DrawerToggle()
     {
         _drawerOpen = !_drawerOpen;
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        Nav.NavigateTo("/login", forceLoad: true);
     }
 }

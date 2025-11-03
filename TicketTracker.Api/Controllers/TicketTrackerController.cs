@@ -7,4 +7,5 @@ namespace TicketTracker.Api.Controllers;
 [Route("[controller]")]
 public class TicketTrackerController(IAuthService authService) : ControllerBase
 {
+    
 }
