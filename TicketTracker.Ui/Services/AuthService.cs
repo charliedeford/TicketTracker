@@ -1,5 +1,7 @@
 using System.Net.Http.Json;
 using Microsoft.JSInterop;
+using Microsoft.AspNetCore.Components.Authorization;
+using TicketTracker.Ui.Services.Security;
 using TicketTracker.Ui.Models;
 
 namespace TicketTracker.Ui.Services;
@@ -9,11 +11,13 @@ public class AuthService : IAuthService
     private readonly HttpClient _httpClient;
     private readonly IJSRuntime _jsRuntime;
     private bool _isAuthenticated;
+    private readonly JwtAuthenticationStateProvider _authProvider;
 
-    public AuthService(HttpClient httpClient, IJSRuntime jsRuntime)
+    public AuthService(HttpClient httpClient, IJSRuntime jsRuntime, AuthenticationStateProvider authProvider)
     {
         _httpClient = httpClient;
         _jsRuntime = jsRuntime;
+        _authProvider = (JwtAuthenticationStateProvider)authProvider;
     }
 
     public bool IsAuthenticated => _isAuthenticated;
@@ -28,7 +32,8 @@ public class AuthService : IAuthService
                 var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
                 if (result?.Token != null)
                 {
-                    await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", result.Token);
+                    await _authProvider.MarkUserAsAuthenticatedAsync(result.Token);
+                    _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.Token);
                     _isAuthenticated = true;
                     return true;
                 }
@@ -56,7 +61,8 @@ public class AuthService : IAuthService
 
     public async Task LogoutAsync()
     {
-        await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
+        await _authProvider.MarkUserAsLoggedOutAsync();
+        _httpClient.DefaultRequestHeaders.Authorization = null;
         _isAuthenticated = false;
     }
 }

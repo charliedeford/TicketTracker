@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using TicketTracker.Api.Models.Requests;
 using TicketTracker.Api.Models.Responses;
-using TicketTracker.Api.Authorization;
 
 namespace TicketTracker.Api.Controllers;
 
@@ -43,7 +42,7 @@ public class AuthController(IAuthService authService) : ControllerBase
         return Ok(new AuthResponse(response.Token ?? string.Empty));
     }
 
-    [HttpPut("users/{userId}/groups")]
+    [HttpPut("Users/{userId}/Groups")]
     [Authorize(Policy = "RequireAdmin")]
     public async Task<IActionResult> UpdateUserGroups(int userId, UpdateUserGroupsRequest request, CancellationToken cancellationToken = default)
     {
@@ -62,7 +61,7 @@ public class AuthController(IAuthService authService) : ControllerBase
         return Ok(new SuccessResponse("User groups updated successfully"));
     }
 
-    [HttpGet("users/{userId}/groups")]
+    [HttpGet("Users/{userId}/Groups")]
     [Authorize(Policy = "RequireAdmin")]
     public async Task<IActionResult> GetUserGroups(int userId, CancellationToken cancellationToken = default)
     {

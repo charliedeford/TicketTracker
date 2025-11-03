@@ -7,7 +7,7 @@ using TicketTracker.Api.Models.Responses;
 
 namespace TicketTracker.Api.Services;
 
-public class AuthService(IUserRepository userRepository, IConfiguration config) : IAuthService
+public class AuthService(IUserRepository userRepository, IConfiguration config, IGroupRepository groupRepository) : IAuthService
 {
     public async Task<RegisterResponse> RegisterAsync(string username, string password, int[]? groupIds, CancellationToken cancellationToken = default)
     {
@@ -20,8 +20,14 @@ public class AuthService(IUserRepository userRepository, IConfiguration config) 
         {
             Username = username,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
-            
         };
+
+        var userGroup = await groupRepository.GetByNameAsync("User", cancellationToken);
+
+        if (userGroup != null)
+        {
+            user.Groups.Add(userGroup);
+        }
 
         await userRepository.CreateAsync(user, cancellationToken);
         return new RegisterResponse(true, null);
@@ -53,9 +59,12 @@ public class AuthService(IUserRepository userRepository, IConfiguration config) 
             new(JwtRegisteredClaimNames.UniqueName, user.Username)
         };
 
-        foreach (var group in user.Groups)
-        {
-            claims.Add(new Claim("group", group.Name));
+        if(user.Groups != null)
+        {            
+            foreach (var group in user.Groups)
+            {
+                claims.Add(new Claim("group", group.Name));
+            }
         }
 
         var token = new JwtSecurityToken(
