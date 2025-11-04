@@ -2,6 +2,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using TicketTracker.Api.Models.Dtos;
 using TicketTracker.Api.Models.Entities;
 using TicketTracker.Api.Models.Responses;
 
@@ -21,13 +22,12 @@ public class AuthService(IUserRepository userRepository, IConfiguration config, 
             Username = username,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
         };
-
         var userGroup = await groupRepository.GetByNameAsync("User", cancellationToken);
-
         if (userGroup != null)
         {
             user.Groups.Add(userGroup);
         }
+        
 
         await userRepository.CreateAsync(user, cancellationToken);
         return new RegisterResponse(true, null);
@@ -90,14 +90,14 @@ public class AuthService(IUserRepository userRepository, IConfiguration config, 
         return new LoginResponse(true, null, null);
     }
 
-    public async Task<List<Group>> GetUserGroupsAsync(int userId, CancellationToken cancellationToken = default)
+    public async Task<List<GroupDto>> GetUserGroupsAsync(int userId, CancellationToken cancellationToken = default)
     {
         var user = await userRepository.GetByIdAsync(userId, cancellationToken);
         if (user == null)
         {
-            return new List<Group>();
+            return new List<GroupDto>();
         }
 
-        return user.Groups.ToList();
+        return user.Groups.Select(g => new GroupDto(g.Id, g.Name, g.Description)).ToList();
     }
 }

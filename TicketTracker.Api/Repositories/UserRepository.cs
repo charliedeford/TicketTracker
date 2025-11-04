@@ -74,4 +74,11 @@ public class UserRepository(TicketTrackerContext context) : IUserRepository
 
         await SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<List<UserDto>?> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await context.Users
+            .Select(u => new UserDto(u.Id, u.Username))
+            .ToListAsync(cancellationToken);
+    }
 }
