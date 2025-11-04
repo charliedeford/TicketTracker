@@ -33,4 +33,31 @@ public class TicketService(HttpClient httpClient) : ITicketService
             return null;
         }
     }
+
+    public async Task<TicketDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await httpClient.GetFromJsonAsync<TicketDto>($"tickets/{id}", cancellationToken);
+            return response;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<bool> UpdateAsync(int id, UpdateTicketRequest request, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await httpClient.PutAsJsonAsync($"tickets/{id}", request, cancellationToken);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[TicketService] UpdateAsync exception: {ex.Message}");
+            return false;
+        }
+    }
 }
