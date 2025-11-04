@@ -35,6 +35,9 @@ builder.Services.AddControllers(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IGroupRepository, GroupRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITicketService, TicketService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ITicketRepository, TicketRepository>();
 builder.Services.AddScoped<IAuthorizationHandler, GroupAuthorizationHandler>();
 
 builder.Services.AddAuthorization(options =>
@@ -48,14 +51,23 @@ var connString = builder.Configuration.GetConnectionString("DefaultConnection")
                  ?? throw new InvalidOperationException("Missing ConnectionStrings:DefaultConnection");
 
 builder.Services.AddDbContext<TicketTrackerContext>(options =>
-    options.UseSqlServer(connString, sql =>
+{
+    if (builder.Environment.IsEnvironment("Testing"))
     {
-        // Azure SQL resiliency
-        sql.EnableRetryOnFailure(
-            maxRetryCount: 5,
-            maxRetryDelay: TimeSpan.FromSeconds(15),
-            errorNumbersToAdd: null);
-    }));
+        options.UseInMemoryDatabase("InMemoryTestDb");
+    }
+    else
+    {
+        options.UseSqlServer(connString, sql =>
+        {
+            // Azure SQL resiliency
+            sql.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(15),
+                errorNumbersToAdd: null);
+        });
+    }
+});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -114,3 +126,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Make Program accessible to integration tests
+public partial class Program { }

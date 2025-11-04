@@ -1,0 +1,218 @@
+@page "/tickets"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using TicketTracker.Ui.Services
+@using TicketTracker.Ui.Models
+@using TicketTracker.Ui.Shared
+@using System.Security.Claims
+@inject ITicketService TicketService
+@inject IUserService UserService
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Tickets</PageTitle>
+
+<AuthorizeView>
+    <NotAuthorized>
+        <RedirectToLogin />
+    </NotAuthorized>
+    <Authorized>
+        @if (IsAuthorized)
+        {
+            <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-8">
+                <MudCard Elevation="25">
+                    <MudCardHeader>
+                        <MudText Typo="Typo.h5">Open Tickets</MudText>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        @if (isLoading)
+                        {
+                            <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                        }
+                        else if (paginatedResponse != null)
+                        {
+                            <MudStack Row="true" Spacing="2" Class="mb-4">
+                                <MudSelect T="int?" Label="Filter by Status" Value="selectedStatus" ValueChanged="OnStatusFilterChanged" Clearable="true" Dense="true" Style="min-width: 220px;">
+                                    <MudSelectItem T="int?" Value="@((int?)0)">Open</MudSelectItem>
+                                    <MudSelectItem T="int?" Value="@((int?)1)">In Progress</MudSelectItem>
+                                    <MudSelectItem T="int?" Value="@((int?)2)">Closed</MudSelectItem>
+                                </MudSelect>
+
+                                <MudSelect T="int?" Label="Filter by User" Value="selectedUserId" ValueChanged="OnUserFilterChanged" Clearable="true" Dense="true" Style="min-width: 260px;">
+                                    <MudSelectItem T="int?" Value="@((int?)-1)">Unassigned</MudSelectItem>
+                                    @foreach (var u in availableUserOptions.Where(u => u.Id.HasValue).OrderBy(u => u.Name))
+                                    {
+                                        <MudSelectItem T="int?" Value="@((int?)u.Id!.Value)">@u.Name</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudStack>
+
+                            <MudTable Items="@paginatedResponse.Items" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true">
+                                <HeaderContent>
+                                    <MudTh>ID</MudTh>
+                                    <MudTh>Title</MudTh>
+                                    <MudTh>Description</MudTh>
+                                    <MudTh>Status</MudTh>
+                                    <MudTh>Created</MudTh>
+                                    <MudTh>Assigned To</MudTh>
+                                </HeaderContent>
+                                <RowTemplate Context="ticket">
+                                    <MudTd DataLabel="ID">@ticket.Id</MudTd>
+                                    <MudTd DataLabel="Title">@ticket.Title</MudTd>
+                                    <MudTd DataLabel="Description">
+                                        @if (ticket.Description.Length > 50)
+                                        {
+                                            <span>@ticket.Description.Substring(0, 50)...</span>
+                                        }
+                                        else
+                                        {
+                                            <span>@ticket.Description</span>
+                                        }
+                                    </MudTd>
+                                    <MudTd DataLabel="Status">
+                                        <MudChip T="string" Color="@GetStatusColor(ticket.Status)" Size="Size.Small">
+                                            @ticket.StatusName
+                                        </MudChip>
+                                    </MudTd>
+                                    <MudTd DataLabel="Created">@ticket.CreatedAt.ToString("g")</MudTd>
+                                    <MudTd DataLabel="Assigned To">@(ticket.AssignedToUsername ?? "Unassigned")</MudTd>
+                                </RowTemplate>
+                            </MudTable>
+
+                            <MudDivider Class="my-4" />
+
+                            <div class="d-flex justify-space-between align-center">
+                                <MudText Typo="Typo.body2">
+                                    Page @paginatedResponse.Page of @paginatedResponse.TotalPages 
+                                    (Total: @paginatedResponse.TotalCount tickets)
+                                </MudText>
+                                <MudStack Row="true" Spacing="2">
+                                    <MudButton 
+                                        Variant="Variant.Filled" 
+                                        Color="Color.Primary" 
+                                        Disabled="@(!paginatedResponse.HasPreviousPage || isLoading)"
+                                        OnClick="@(() => LoadTicketsAsync(paginatedResponse.Page - 1))">
+                                        Previous
+                                    </MudButton>
+                                    <MudButton 
+                                        Variant="Variant.Filled" 
+                                        Color="Color.Primary" 
+                                        Disabled="@(!paginatedResponse.HasNextPage || isLoading)"
+                                        OnClick="@(() => LoadTicketsAsync(paginatedResponse.Page + 1))">
+                                        Next
+                                    </MudButton>
+                                </MudStack>
+                            </div>
+                        }
+                    </MudCardContent>
+                </MudCard>
+            </MudContainer>
+        }
+        else
+        {
+            <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-8">
+                <MudAlert Severity="Severity.Error" Variant="Variant.Filled">
+                    <MudText Typo="Typo.h6">Access Denied</MudText>
+                    <MudText Typo="Typo.body1">You do not have permission to view this page. This page is only accessible to Admin and Support users.</MudText>
+                </MudAlert>
+            </MudContainer>
+        }
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    private PaginatedResponse<TicketDto>? paginatedResponse;
+    private bool isLoading = true;
+    private bool IsAuthorized = false;
+    private const int PageSize = 10;
+    private int? selectedStatus;
+    private int? selectedUserId;
+
+    private record UserOption(int? Id, string Name);
+    private List<UserOption> availableUserOptions = new();
+    private List<UserDto>? availableUsers = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckAuthorizationAsync();
+        
+        if (IsAuthorized)
+        {
+            await LoadTicketsAsync(1);
+        }
+        else
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task CheckAuthorizationAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var groupClaims = user.FindAll("group").Select(c => c.Value).ToList();
+            IsAuthorized = groupClaims.Contains("Admin") || groupClaims.Contains("Support");
+        }
+    }
+
+    private async Task LoadTicketsAsync(int page)
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            paginatedResponse = await TicketService.GetAllAsync(page, PageSize, selectedUserId, selectedStatus);
+            availableUsers = await UserService.GetAllAsync();
+            
+            if (paginatedResponse == null)
+            {
+                Snackbar.Add("Failed to load tickets. You may not have permission to view this page.", Severity.Error);
+            }
+
+            if (availableUsers != null) 
+            {
+                availableUserOptions = availableUsers
+                    .Select(u => new UserOption(u.Id, u.Username))
+                    .OrderBy(u => u.Id.HasValue ? 1 : 0)
+                    .ThenBy(u => u.Name)
+                    .ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading tickets: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private Color GetStatusColor(int status)
+    {
+        return status switch
+        {
+            0 => Color.Info,      // Open
+            1 => Color.Warning,   // In Progress
+            2 => Color.Success,   // Closed
+            _ => Color.Default
+        };
+    }
+
+    private async Task OnStatusFilterChanged(int? value)
+    {
+        selectedStatus = value;
+        await LoadTicketsAsync(1);
+    }
+
+    private async Task OnUserFilterChanged(int? value)
+    {
+        selectedUserId = value;
+        await LoadTicketsAsync(1);
+    }
+}

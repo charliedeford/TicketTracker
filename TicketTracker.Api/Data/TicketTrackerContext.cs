@@ -9,7 +9,7 @@ public class TicketTrackerContext : DbContext
 
     public DbSet<User> Users => Set<User>();
     public DbSet<Group> Groups => Set<Group>();
-    public DbSet<Ticket> Tickets => Set<Ticket>();
+    public DbSet<Ticket> Ticket => Set<Ticket>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

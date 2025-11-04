@@ -14,16 +14,31 @@
         <RedirectToLogin />
     </NotAuthorized>
     <Authorized>
-        <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-12">
-            <MudCard Elevation="25" Class="pa-4">
+        <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-8">
+            <MudCard Elevation="25">
                 <MudCardHeader>
                     <MudText Typo="Typo.h5">Report Issue</MudText>
                 </MudCardHeader>
                 <MudCardContent>
-                    <EditForm Model="model" OnValidSubmit="OnSubmitAsync" Context="formContext">
+					<EditForm Model="model" OnValidSubmit="OnSubmitAsync" Context="formContext">
 						<DataAnnotationsValidator />
-						<MudTextField @bind-Value="model.Title" Label="Title" Required="true" RequiredError="Title is required" MaxLength="200" />
-						<MudTextField @bind-Value="model.Description" Label="Description" Lines="5" Text="" Placeholder="Describe the issue..." Required="true" RequiredError="Description is required" MaxLength="2000" />
+						<MudTextField 
+							@bind-Value="model.Title" 
+							Label="Title" 
+							Required="true" 
+							RequiredError="Title is required" 
+							MaxLength="200" 
+						/>
+						<MudTextField 
+							@bind-Value="model.Description" 
+							Label="Description" 
+							Lines="5" 
+							Placeholder="Describe the issue..."
+							Required="true" 
+							RequiredError="Description is required" 
+							MaxLength="2000" 
+							Class="mt-4"
+						/>
 						<MudStack Class="mt-4" Row="true" Spacing="2">
 							<MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@isSubmitting" ButtonType="ButtonType.Submit">
 								@(isSubmitting ? "Submitting..." : "Submit")
@@ -39,21 +54,24 @@
 </AuthorizeView>
 
 @code {
-	private TicketCreateRequest model = new();
+	private TicketCreateRequest model = new TicketCreateRequest();
 	private bool isSubmitting = false;
 
 	private async Task OnSubmitAsync()
 	{
 		if (isSubmitting) return;
+		
 		isSubmitting = true;
+		
 		var ok = await TicketService.CreateAsync(model);
+		
 		isSubmitting = false;
 
 		if (ok)
 		{
 			Snackbar.Add("Ticket submitted successfully.", Severity.Success);
-			model = new();
 			StateHasChanged();
+			ResetForm();
 		}
 		else
 		{
@@ -63,6 +81,6 @@
 
 	private void ResetForm()
 	{
-		model = new();
+		model = new TicketCreateRequest();
 	}
 }
