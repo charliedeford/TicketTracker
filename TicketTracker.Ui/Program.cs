@@ -11,7 +11,12 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddMudServices();
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7001/api/v1/") });
+builder.Services.AddScoped(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var baseUrl = config["Api:BaseUrl"] ?? throw new InvalidOperationException("Api:BaseUrl configuration is missing");
+    return new HttpClient { BaseAddress = new Uri(baseUrl) };
+});
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITicketService, TicketService>();
 builder.Services.AddScoped<IUserService, UserService>();

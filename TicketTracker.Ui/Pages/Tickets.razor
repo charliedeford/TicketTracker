@@ -5,10 +5,12 @@
 @using TicketTracker.Ui.Models
 @using TicketTracker.Ui.Shared
 @using System.Security.Claims
+@using MudBlazor
 @inject ITicketService TicketService
 @inject IUserService UserService
 @inject ISnackbar Snackbar
 @inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
 
 <PageTitle>Tickets</PageTitle>
 
@@ -82,7 +84,7 @@
                                             Variant="Variant.Outlined" 
                                             Color="Color.Primary" 
                                             Size="Size.Small"
-                                            @onclick="@(() => OpenEditDialog(ticket))">
+                                            OnClick="@(() => NavigationManager.NavigateTo($"/tickets/{ticket.Id}/edit"))">
                                             Edit
                                         </MudButton>
                                     </MudTd>
@@ -128,52 +130,7 @@
             </MudContainer>
         }
 
-        <MudDialog @bind-IsVisible="editDialogOpen" Options="dialogOptions">
-            <DialogContent>
-                @if (editingTicket != null)
-                {
-                    <MudText Typo="Typo.h6" GutterBottom="true">Edit Ticket #@editingTicket.Id</MudText>
-                    
-                    <MudGrid>
-                        <MudItem xs="12">
-                            <MudTextField T="string" Label="Title" Value="@editingTicket.Title" ReadOnly="true" Variant="Variant.Outlined" />
-                        </MudItem>
-                        <MudItem xs="12">
-                            <MudTextField T="string" Label="Description" Value="@editingTicket.Description" ReadOnly="true" Variant="Variant.Outlined" Lines="3" />
-                        </MudItem>
-                        <MudItem xs="6">
-                            <MudSelect T="int" Label="Status" @bind-Value="editStatus" Variant="Variant.Outlined">
-                                <MudSelectItem T="int" Value="@((int)0)">Open</MudSelectItem>
-                                <MudSelectItem T="int" Value="@((int)1)">In Progress</MudSelectItem>
-                                <MudSelectItem T="int" Value="@((int)2)">Closed</MudSelectItem>
-                            </MudSelect>
-                        </MudItem>
-                        <MudItem xs="6">
-                            <MudSelect T="int?" Label="Assigned To" @bind-Value="editAssignedToUserId" Variant="Variant.Outlined" Clearable="true">
-                                <MudSelectItem T="int?" Value="@((int?)null)">Unassigned</MudSelectItem>
-                                @if (availableUsers != null)
-                                {
-                                    @foreach (var u in availableUsers.OrderBy(u => u.Username))
-                                    {
-                                        <MudSelectItem T="int?" Value="@((int?)u.Id)">@u.Username</MudSelectItem>
-                                    }
-                                }
-                            </MudSelect>
-                        </MudItem>
-                        <MudItem xs="6">
-                            <MudTextField T="string" Label="Created" Value="@editingTicket.CreatedAt.ToString("g")" ReadOnly="true" Variant="Variant.Outlined" />
-                        </MudItem>
-                        <MudItem xs="6">
-                            <MudTextField T="string" Label="Updated" Value="@(editingTicket.UpdatedAt?.ToString("g") ?? "Never")" ReadOnly="true" Variant="Variant.Outlined" />
-                        </MudItem>
-                    </MudGrid>
-                }
-            </DialogContent>
-            <DialogActions>
-                <MudButton OnClick="CancelEdit" Variant="Variant.Text" Color="Color.Secondary">Cancel</MudButton>
-                <MudButton OnClick="SaveChanges" Variant="Variant.Filled" Color="Color.Primary" Disabled="isSaving">Save</MudButton>
-            </DialogActions>
-        </MudDialog>
+
     </Authorized>
 </AuthorizeView>
 
@@ -188,14 +145,6 @@
     private record UserOption(int? Id, string Name);
     private List<UserOption> availableUserOptions = new();
     private List<UserDto>? availableUsers = new();
-
-    // Edit dialog properties
-    private bool editDialogOpen = false;
-    private TicketDto? editingTicket;
-    private int editStatus;
-    private int? editAssignedToUserId;
-    private bool isSaving = false;
-    private DialogOptions dialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
 
     protected override async Task OnInitializedAsync()
     {
@@ -281,59 +230,5 @@
         await LoadTicketsAsync(1);
     }
 
-    private async Task OpenEditDialog(TicketDto ticket)
-    {
-        editingTicket = ticket;
-        editStatus = ticket.Status;
-        editAssignedToUserId = ticket.AssignedToUserId;
-        editDialogOpen = true;
-        Snackbar.Add($"Opening edit dialog for ticket {ticket.Id}", Severity.Info);
-        StateHasChanged();
-    }
 
-    private void CancelEdit()
-    {
-        editDialogOpen = false;
-        editingTicket = null;
-        editStatus = 0;
-        editAssignedToUserId = null;
-    }
-
-    private async Task SaveChanges()
-    {
-        if (editingTicket == null) return;
-
-        isSaving = true;
-        StateHasChanged();
-
-        try
-        {
-            var request = new UpdateTicketRequest
-            {
-                Status = editStatus,
-                AssignedToUserId = editAssignedToUserId
-            };
-
-            var success = await TicketService.UpdateAsync(editingTicket.Id, request);
-            if (success)
-            {
-                Snackbar.Add("Ticket updated successfully", Severity.Success);
-                await LoadTicketsAsync(paginatedResponse?.Page ?? 1);
-                CancelEdit();
-            }
-            else
-            {
-                Snackbar.Add("Failed to update ticket", Severity.Error);
-            }
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Error updating ticket: {ex.Message}", Severity.Error);
-        }
-        finally
-        {
-            isSaving = false;
-            StateHasChanged();
-        }
-    }
 }

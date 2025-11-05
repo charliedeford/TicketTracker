@@ -5,7 +5,7 @@ publish/
 *.user
 *.suo
 .vscode/
-TicketTracker.Api/appsettings.json
+TicketTracker.Api/appsettings*
 *.user
 *.userosscache
 *.sln.docstates
@@ -14,3 +14,4 @@ TicketTracker.Api/appsettings.json
 .env.local
 .env.*
 .envrc
+TicketTracker.Ui/wwwroot/appsettings*
