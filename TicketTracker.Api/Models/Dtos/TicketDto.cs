@@ -11,4 +11,17 @@ public class TicketDto
     public DateTime? UpdatedAt { get; set; }
     public int? AssignedToUserId { get; set; }
     public string? AssignedToUsername { get; set; }
+
+    public TicketDto(Ticket ticket)
+    {
+        Id = ticket.Id;
+        Title = ticket.Title;
+        Description = ticket.Description;
+        Status = (int)ticket.Status;
+        StatusName = ticket.Status.ToString();
+        CreatedAt = ticket.CreatedAt;
+        UpdatedAt = ticket.UpdatedAt;
+        AssignedToUserId = ticket.AssignedToUserId;
+        AssignedToUsername = ticket.AssignedToUser?.Username;
+    }
 }

@@ -5,10 +5,12 @@
 @using TicketTracker.Ui.Models
 @using TicketTracker.Ui.Shared
 @using System.Security.Claims
+@using MudBlazor
 @inject ITicketService TicketService
 @inject IUserService UserService
 @inject ISnackbar Snackbar
 @inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
 
 <PageTitle>Tickets</PageTitle>
 
@@ -55,6 +57,7 @@
                                     <MudTh>Status</MudTh>
                                     <MudTh>Created</MudTh>
                                     <MudTh>Assigned To</MudTh>
+                                    <MudTh>Actions</MudTh>
                                 </HeaderContent>
                                 <RowTemplate Context="ticket">
                                     <MudTd DataLabel="ID">@ticket.Id</MudTd>
@@ -76,6 +79,15 @@
                                     </MudTd>
                                     <MudTd DataLabel="Created">@ticket.CreatedAt.ToString("g")</MudTd>
                                     <MudTd DataLabel="Assigned To">@(ticket.AssignedToUsername ?? "Unassigned")</MudTd>
+                                    <MudTd DataLabel="Actions">
+                                        <MudButton 
+                                            Variant="Variant.Outlined" 
+                                            Color="Color.Primary" 
+                                            Size="Size.Small"
+                                            OnClick="@(() => NavigationManager.NavigateTo($"/tickets/{ticket.Id}/edit"))">
+                                            Edit
+                                        </MudButton>
+                                    </MudTd>
                                 </RowTemplate>
                             </MudTable>
 
@@ -117,6 +129,8 @@
                 </MudAlert>
             </MudContainer>
         }
+
+
     </Authorized>
 </AuthorizeView>
 
@@ -215,4 +229,6 @@
         selectedUserId = value;
         await LoadTicketsAsync(1);
     }
+
+
 }

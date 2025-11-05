@@ -43,4 +43,16 @@ public class TicketsController(ITicketService ticketService) : ControllerBase
         var response = await ticketService.GetByIdAsync(id, ct);
         return Ok(response);
     }
+
+    [HttpPut("{id:int}")]
+    public async Task<ActionResult<TicketDto>> UpdateAsync(int id, UpdateTicketRequest request, CancellationToken ct)
+    {
+        if (!ModelState.IsValid)
+        {
+            return ValidationProblem(ModelState);
+        }
+
+        var response = await ticketService.UpdateAsync(id, request, ct);
+        return Ok(response);
+    }
 }

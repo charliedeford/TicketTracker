@@ -10,5 +10,5 @@ public interface IUserRepository
     Task<User> UpdateAsync(User user, CancellationToken cancellationToken = default);
     Task UpdateUserGroupsAsync(int userId, List<int> groupIds, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
-    Task<List<UserDto>?> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<List<User>?> GetAllAsync(CancellationToken cancellationToken = default);
 }

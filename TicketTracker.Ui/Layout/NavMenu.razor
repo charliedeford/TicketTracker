@@ -1,16 +1,14 @@
-﻿<MudNavMenu>
+﻿@using Microsoft.AspNetCore.Components.Authorization
+
+<MudNavMenu>
     <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Report Issue</MudNavLink>
-    <MudNavLink Href="tickets" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.List">Tickets</MudNavLink>
-    <MudNavGroup Title="Settings" Icon="@Icons.Material.Filled.Settings" Expanded="true">
-        <MudNavLink Href="users" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Person">Users</MudNavLink>
-        <MudNavLink Href="groups" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Group">Groups</MudNavLink>
-    </MudNavGroup>
     <AuthorizeView>
-        <NotAuthorized>
-            <MudDivider Class="my-2" />
-            <MudNavLink Href="login" Icon="@Icons.Material.Filled.Login">Login</MudNavLink>
-            <MudNavLink Href="register" Icon="@Icons.Material.Filled.PersonAdd">Register</MudNavLink>
-        </NotAuthorized>
+        <Authorized>
+            @if (context.User.HasClaim("group", "Support") || context.User.HasClaim("group", "Admin"))
+            {
+                <MudNavLink Href="tickets" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.List">Tickets</MudNavLink>
+            }
+        </Authorized>
     </AuthorizeView>
 </MudNavMenu>
 

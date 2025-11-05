@@ -12,16 +12,23 @@ using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("BlazorClient", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5076",
-                "https://localhost:5076"
-            )
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins);
+        }
+        else
+        {
+            // For development, allow any origin if not specified
+            policy.AllowAnyOrigin();
+        }
+        policy.AllowAnyHeader()
+              .AllowAnyMethod();
         // No AllowCredentials() needed for JWT in Authorization header
     });
 });
@@ -114,9 +121,10 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
-    app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "TicketTracker API v1"));
 }
+
+app.UseSwagger();
+app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "TicketTracker API v1"));
 
 app.UseHttpsRedirection();
 app.UseRouting();

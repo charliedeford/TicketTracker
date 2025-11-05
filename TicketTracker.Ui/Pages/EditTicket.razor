@@ -1,0 +1,182 @@
+@page "/tickets/{Id:int}/edit"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using TicketTracker.Ui.Services
+@using TicketTracker.Ui.Models
+@using TicketTracker.Ui.Shared
+@using MudBlazor
+@inject ITicketService TicketService
+@inject IUserService UserService
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit Ticket #@Id</PageTitle>
+
+<AuthorizeView>
+    <NotAuthorized>
+        <RedirectToLogin />
+    </NotAuthorized>
+    <Authorized>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
+            <MudCard Elevation="25">
+                <MudCardHeader>
+                    <MudText Typo="Typo.h5">Edit Ticket #@Id</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    @if (isLoading)
+                    {
+                        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                    }
+                    else if (ticket != null)
+                    {
+                        <MudGrid>
+                            <MudItem xs="12">
+                                <MudTextField T="string" Label="Title" Value="@ticket.Title" ReadOnly="true" Variant="Variant.Outlined" />
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudTextField T="string" Label="Description" Value="@ticket.Description" ReadOnly="true" Variant="Variant.Outlined" Lines="3" />
+                            </MudItem>
+                            <MudItem xs="6">
+                                <MudSelect T="int" Label="Status" @bind-Value="status" Variant="Variant.Outlined">
+                                    <MudSelectItem T="int" Value="@((int)0)">Open</MudSelectItem>
+                                    <MudSelectItem T="int" Value="@((int)1)">In Progress</MudSelectItem>
+                                    <MudSelectItem T="int" Value="@((int)2)">Closed</MudSelectItem>
+                                </MudSelect>
+                            </MudItem>
+                            <MudItem xs="6">
+                                <MudSelect T="int?" Label="Assigned To" @bind-Value="assignedToUserId" Variant="Variant.Outlined" Clearable="true">
+                                    <MudSelectItem T="int?" Value="@((int?)null)">Unassigned</MudSelectItem>
+                                    @if (availableUsers != null)
+                                    {
+                                        @foreach (var u in availableUsers.OrderBy(u => u.Username))
+                                        {
+                                            <MudSelectItem T="int?" Value="@((int?)u.Id)">@u.Username</MudSelectItem>
+                                        }
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                            <MudItem xs="6">
+                                <MudTextField T="string" Label="Created" Value="@ticket.CreatedAt.ToString("g")" ReadOnly="true" Variant="Variant.Outlined" />
+                            </MudItem>
+                            <MudItem xs="6">
+                                <MudTextField T="string" Label="Updated" Value="@(ticket.UpdatedAt?.ToString("g") ?? "Never")" ReadOnly="true" Variant="Variant.Outlined" />
+                            </MudItem>
+                        </MudGrid>
+                    }
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton 
+                        StartIcon="@Icons.Material.Filled.ArrowBack"
+                        Variant="Variant.Text" 
+                        Color="Color.Secondary" 
+                        OnClick="GoBack">
+                        Back to List
+                    </MudButton>
+                    <MudSpacer />
+                    <MudButton 
+                        StartIcon="@Icons.Material.Filled.Save"
+                        Variant="Variant.Filled" 
+                        Color="Color.Primary" 
+                        OnClick="SaveChanges" 
+                        Disabled="isSaving">
+                        Save Changes
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudContainer>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private TicketDto? ticket;
+    private List<UserDto>? availableUsers;
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private int status;
+    private int? assignedToUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var response = await TicketService.GetByIdAsync(Id);
+            if (response != null)
+            {
+                ticket = response;
+                status = ticket.Status;
+                assignedToUserId = ticket.AssignedToUserId;
+            }
+            else
+            {
+                Snackbar.Add("Ticket not found", Severity.Error);
+                NavigationManager.NavigateTo("/tickets");
+                return;
+            }
+
+            availableUsers = await UserService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading ticket: {ex.Message}", Severity.Error);
+            NavigationManager.NavigateTo("/tickets");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveChanges()
+    {
+        if (ticket == null) return;
+
+        isSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new UpdateTicketRequest
+            {
+                Status = status,
+                AssignedToUserId = assignedToUserId
+            };
+
+            var success = await TicketService.UpdateAsync(ticket.Id, request);
+            if (success)
+            {
+                Snackbar.Add("Ticket updated successfully", Severity.Success);
+                NavigationManager.NavigateTo("/tickets");
+            }
+            else
+            {
+                Snackbar.Add("Failed to update ticket", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error updating ticket: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/tickets");
+    }
+}
